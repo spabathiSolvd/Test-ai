@@ -58,6 +58,8 @@ jobs:
         run: npm ci
       - name: Build
         run: npm run build
+      - name: Bootstrap CDK
+        run: npx cdk bootstrap aws://${{ vars.AWS_ACCOUNT_ID }}/us-east-1
       - name: Deploy
         run: |
           # Use vars.AWS_ACCOUNT_ID if set, otherwise extract from cdk.context.json
@@ -83,4 +85,4 @@ jobs:
               fs.writeFileSync('cdk.context.json', JSON.stringify(cleaned, null, 2));
             } catch(e) {}
           "
-          npx cdk deploy CloudWatchDashboardsStack --require-approval never
+          npx cdk deploy CloudWatchDashboardsStack --require-approval never --verbose
