@@ -91,14 +91,14 @@ describe('CloudWatchDashboardsStack', () => {
         ManagedPolicyArns: Match.arrayWith([
           Match.objectLike({
             'Fn::Join': Match.arrayWith([
-              Match.arrayContaining([
+              Match.arrayWith([
                 Match.stringLikeRegexp('AmazonSSMManagedInstanceCore'),
               ]),
             ]),
           }),
           Match.objectLike({
             'Fn::Join': Match.arrayWith([
-              Match.arrayContaining([
+              Match.arrayWith([
                 Match.stringLikeRegexp('CloudWatchAgentServerPolicy'),
               ]),
             ]),
