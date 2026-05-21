@@ -18,7 +18,7 @@ import { CloudWatchDashboardsStack } from '../lib/topics/03-cloudwatch-dashboard
   const app = new cdk.App();
 
 const envName = (app.node.tryGetContext('envName') as 'dev' | 'staging' | 'prod') ?? 'dev';
-const account = process.env.CDK_DEFAULT_ACCOUNT ?? process.env.AWS_ACCOUNT_ID ?? '575458732775';
+const account = process.env.CDK_DEFAULT_ACCOUNT ?? process.env.AWS_ACCOUNT_ID ?? '123456789012';
 const region = process.env.CDK_DEFAULT_REGION ?? 'us-east-1';
 
 
