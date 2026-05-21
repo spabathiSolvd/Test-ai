@@ -1,0 +1,58 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Reusable Composite Action: CDK CI
+#
+# Shared build/test/synth steps used by all topic CI workflows.
+# To add a new step to all pipelines, add it here once.
+#
+# Usage in a workflow:
+#   steps:
+#     - uses: actions/checkout@v4
+#     - uses: ./.github/actions/cdk-ci
+#       with:
+#         stack-name: 'NetworkingStack'  # optional — synths specific stack
+#
+# To add new checks (linting, security scanning, etc.), add steps below.
+# All topic workflows will pick them up automatically.
+# ──────────────────────────────────────────────────────────────────────────────
+name: 'CDK CI'
+description: 'Shared build, test, and synth steps for CDK TypeScript stacks'
+
+inputs:
+  stack-name:
+    description: 'Stack name to synth (optional — synths all if omitted)'
+    required: false
+    default: ''
+  node-version:
+    description: 'Node.js version to use'
+    required: false
+    default: '20'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      shell: bash
+      run: npm ci
+
+    - name: Build (TypeScript compile)
+      shell: bash
+      run: npm run build
+
+    - name: Test
+      shell: bash
+      run: npm test
+
+    - name: CDK Synth
+      shell: bash
+      run: |
+        if [ -n "${{ inputs.stack-name }}" ]; then
+          npx cdk synth ${{ inputs.stack-name }}
+        else
+          npx cdk synth
+        fi

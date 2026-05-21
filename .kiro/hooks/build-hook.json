@@ -1,0 +1,16 @@
+{
+  "name": "CDK Build on Stack Changes",
+  "version": "1.0.0",
+  "description": "Runs TypeScript compilation after any CDK stack file is saved to catch type errors early. Add new patterns to expand coverage.",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "lib/**/*.ts",
+      "bin/**/*.ts"
+    ]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "npm run build 2>&1 | tail -30"
+  }
+}

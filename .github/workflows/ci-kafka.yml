@@ -1,0 +1,34 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Workflow: CI — Kafka / MSK
+#
+# Owner: Francisco Moreno
+#
+# Triggers on pushes to feature/** or feat/** branches when files under
+# lib/topics/05-kafka-msk/** change.
+# Also triggers on pull requests targeting main for the same paths.
+#
+# Uses the shared composite action (.github/actions/cdk-ci).
+# ──────────────────────────────────────────────────────────────────────────────
+name: CI — Kafka / MSK (Francisco)
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+      - 'feat/**'
+    paths:
+      - 'lib/topics/05-kafka-msk/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'lib/topics/05-kafka-msk/**'
+
+jobs:
+  build-and-synth:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/cdk-ci
+        with:
+          stack-name: 'KafkaMskStack'

@@ -1,0 +1,20 @@
+{
+  "name": "Security Scanner on IAM Changes",
+  "version": "1.0.0",
+  "description": "Triggers the security scanner agent whenever IAM, security group, role, or policy files are modified. Add new patterns to the list below to expand coverage.",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "lib/foundation/security/**",
+      "lib/topics/**/*iam*",
+      "lib/topics/**/*security*",
+      "lib/topics/**/*role*",
+      "lib/topics/**/*policy*",
+      "lib/topics/**/*sg*"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A security-sensitive file was just edited. Run the security scanner checks defined in .kiro/agents/security-scanner.md against the changed file. Report all findings with PASS/FAIL status."
+  }
+}

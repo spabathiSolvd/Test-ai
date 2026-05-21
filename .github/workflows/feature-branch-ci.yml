@@ -1,0 +1,204 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Workflow: Feature Branch CI + Auto Merge
+#
+# Triggers on any push to feature/** or feat/** branches.
+#
+# Jobs (run in sequence):
+#   1. check-up-to-date  — Verifies the branch is not behind main.
+#                          If missing commits, fails with the exact list of
+#                          missing commits and rebase instructions to fix it.
+#                          Also does a dry-run merge to detect conflicts early.
+#
+#   2. build-and-test    — Runs only if job 1 passes.
+#                          Executes: npm ci → npm run build → npm test → cdk synth
+#
+#   3. auto-merge        — Runs only if job 2 passes.
+#                          Checks out main, merges the feature branch (--no-ff),
+#                          and pushes to main automatically.
+#
+# Note: Enable branch protection on main in GitHub Settings → Branches to
+# prevent direct pushes and enforce this workflow as the only merge path.
+# ──────────────────────────────────────────────────────────────────────────────
+name: Feature Branch CI + Auto Merge
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+      - 'feat/**'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  # ── 0. Scan for hardcoded AWS account IDs and regions ──────────────────────
+  scan-hardcoded-values:
+    name: Scan for hardcoded AWS account IDs and regions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for hardcoded AWS account IDs
+        run: |
+          # Match 12-digit numbers that look like AWS account IDs in .ts files
+          # Excludes legitimate uses like port numbers, version strings, etc.
+          MATCHES=$(grep -rn --include="*.ts" \
+            -E '(account|Account|ACCOUNT).*[^0-9][0-9]{12}[^0-9]|[^0-9][0-9]{12}[^0-9].*(account|Account|ACCOUNT)' \
+            lib/ bin/ 2>/dev/null || true)
+
+          if [ -n "$MATCHES" ]; then
+            echo "::error::❌ Hardcoded AWS account ID detected in source files."
+            echo ""
+            echo "Found in:"
+            echo "$MATCHES"
+            echo ""
+            echo "Use cdk.Aws.ACCOUNT_ID or cdk.Stack.of(this).account instead."
+            exit 1
+          fi
+          echo "✅ No hardcoded AWS account IDs found."
+
+      - name: Check for hardcoded AWS regions
+        run: |
+          # Match explicit region strings hardcoded as string literals
+          REGION_PATTERN='(us|eu|ap|sa|ca|me|af)-(east|west|north|south|central|northeast|southeast|northwest)-[1-9]'
+
+          MATCHES=$(grep -rn --include="*.ts" \
+            -E "\"${REGION_PATTERN}\"|'${REGION_PATTERN}'" \
+            lib/ bin/ 2>/dev/null || true)
+
+          if [ -n "$MATCHES" ]; then
+            echo "::error::❌ Hardcoded AWS region string detected in source files."
+            echo ""
+            echo "Found in:"
+            echo "$MATCHES"
+            echo ""
+            echo "Use cdk.Aws.REGION or cdk.Stack.of(this).region instead."
+            exit 1
+          fi
+          echo "✅ No hardcoded AWS regions found."
+
+  # ── 1. Check if branch is behind main ──────────────────────────────────────
+  check-up-to-date:
+    name: Check branch is up to date with main
+    runs-on: ubuntu-latest
+    needs: scan-hardcoded-values
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history needed for commit comparison
+
+      - name: Check for merge conflicts / behind commits
+        id: behind-check
+        run: |
+          git fetch origin main
+
+          # Commits in main that are NOT in this branch
+          BEHIND_COMMITS=$(git log HEAD..origin/main --oneline)
+
+          if [ -n "$BEHIND_COMMITS" ]; then
+            echo "behind=true" >> $GITHUB_OUTPUT
+            echo "commits<<EOF" >> $GITHUB_OUTPUT
+            echo "$BEHIND_COMMITS" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "behind=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Fail if branch is behind main
+        if: steps.behind-check.outputs.behind == 'true'
+        run: |
+          echo "::error::❌ Your branch is behind main and cannot be merged."
+          echo ""
+          echo "The following commits exist in main but are missing from your branch:"
+          echo ""
+          echo "${{ steps.behind-check.outputs.commits }}"
+          echo ""
+          echo "To fix this, run:"
+          echo "  git fetch origin"
+          echo "  git rebase origin/main"
+          echo "  # resolve any conflicts, then:"
+          echo "  git push --force-with-lease origin <your-branch>"
+          exit 1
+
+      - name: Check for merge conflicts (dry-run merge)
+        run: |
+          git config user.email "ci@github-actions"
+          git config user.name "GitHub Actions"
+
+          # Attempt a no-commit, no-ff merge to detect conflicts
+          if ! git merge --no-commit --no-ff origin/main 2>&1; then
+            CONFLICT_FILES=$(git diff --name-only --diff-filter=U)
+            echo "::error::❌ Merge conflict detected between your branch and main."
+            echo ""
+            echo "Conflicting files:"
+            echo "$CONFLICT_FILES"
+            echo ""
+            echo "To fix this, run:"
+            echo "  git fetch origin"
+            echo "  git rebase origin/main"
+            echo "  # resolve conflicts in the files listed above, then:"
+            echo "  git add <resolved-files>"
+            echo "  git rebase --continue"
+            echo "  git push --force-with-lease origin <your-branch>"
+            git merge --abort 2>/dev/null || true
+            exit 1
+          fi
+
+          # Abort the dry-run merge — we don't want to actually merge here
+          git merge --abort 2>/dev/null || true
+
+  # ── 2. Build & Test ─────────────────────────────────────────────────────────
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    needs: check-up-to-date
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+      - name: CDK Synth
+        run: npx cdk synth
+
+  # ── 3. Auto Merge to main ───────────────────────────────────────────────────
+  auto-merge:
+    name: Auto Merge to main
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.email "ci@github-actions"
+          git config user.name "GitHub Actions"
+
+      - name: Merge feature branch into main
+        run: |
+          BRANCH="${{ github.ref_name }}"
+
+          git fetch origin main
+          git checkout main
+          git pull origin main
+
+          echo "Merging $BRANCH into main..."
+          git merge --no-ff "origin/$BRANCH" -m "chore: auto-merge $BRANCH into main [ci skip]"
+
+          git push origin main
+          echo "✅ Successfully merged $BRANCH into main."

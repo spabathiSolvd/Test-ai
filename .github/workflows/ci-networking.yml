@@ -1,0 +1,36 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Workflow: CI — Networking
+#
+# Owner: Emmanuel
+#
+# Triggers on pushes to feature/** or feat/** branches when files under
+# lib/topics/01-networking/** change.
+# Also triggers on pull requests targeting main for the same paths.
+#
+# Uses the shared composite action (.github/actions/cdk-ci) so all topic
+# pipelines stay consistent. To add a new check to all pipelines, update
+# the composite action — not this file.
+# ──────────────────────────────────────────────────────────────────────────────
+name: CI — Networking (Emmanuel)
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+      - 'feat/**'
+    paths:
+      - 'lib/topics/01-networking/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'lib/topics/01-networking/**'
+
+jobs:
+  build-and-synth:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/cdk-ci
+        with:
+          stack-name: 'NetworkingStack'
