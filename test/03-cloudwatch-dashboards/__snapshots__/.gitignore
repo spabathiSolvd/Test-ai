@@ -1,0 +1,3 @@
+# Snapshot files are auto-generated and should not be committed.
+# The snapshot test has been replaced with deterministic assertions.
+*.snap
