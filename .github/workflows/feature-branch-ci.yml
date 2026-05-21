@@ -171,6 +171,8 @@ jobs:
         run: npm test
 
       - name: CDK Synth
+        env:
+          CDK_DEFAULT_REGION: 'us-east-1'
         run: npx cdk synth
 
   # ── 3. Auto Merge to main ───────────────────────────────────────────────────

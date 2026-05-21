@@ -2,7 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
 import { CloudWatchDashboardsStack } from '../../lib/topics/03-cloudwatch-dashboards/cloudwatch-dashboards-stack';
 
-// Use a fixed test account ID so tests are not coupled to a real AWS account
+// Use a fixed dummy account ID so tests are not coupled to a real AWS account
 const TEST_ACCOUNT = '123456789012';
 const TEST_REGION = 'us-east-1';
 
