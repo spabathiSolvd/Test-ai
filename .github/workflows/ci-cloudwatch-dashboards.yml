@@ -34,6 +34,8 @@ jobs:
       - uses: ./.github/actions/cdk-ci
         with:
           stack-name: 'CloudWatchDashboardsStack'
+          aws-account-id: ${{ vars.AWS_ACCOUNT_ID }}
+          aws-region: 'us-east-1'
 
   deploy:
     needs: build-and-synth

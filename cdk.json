@@ -30,25 +30,6 @@
     "@aws-cdk/core:enablePartitionLiterals": true,
     "@aws-cdk/aws-events:eventsTargetQueueSameAccount": true,
     "@aws-cdk/aws-iam:standardizedServicePrincipals": true,
-    "@aws-cdk/aws-ecs:disableExplicitDeploymentControllerForCircuitBreaker": true,
-    "vpc-provider:account=unknown-account:filter.isDefault=true:region=unknown-region:returnAsymmetricSubnets=true": {
-      "vpcId": "vpc-dummy-12345",
-      "vpcCidrBlock": "172.31.0.0/16",
-      "availabilityZones": [],
-      "subnetGroups": [
-        {
-          "name": "Public",
-          "type": "Public",
-          "subnets": [
-            {
-              "subnetId": "subnet-dummy-11111",
-              "cidr": "172.31.0.0/20",
-              "availabilityZone": "us-east-1a",
-              "routeTableId": "rtb-dummy-11111"
-            }
-          ]
-        }
-      ]
-    }
+    "@aws-cdk/aws-ecs:disableExplicitDeploymentControllerForCircuitBreaker": true
   }
 }

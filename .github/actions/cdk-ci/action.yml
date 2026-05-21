@@ -26,6 +26,14 @@ inputs:
     description: 'Node.js version to use'
     required: false
     default: '20'
+  aws-account-id:
+    description: 'AWS account ID for CDK context resolution (pass vars.AWS_ACCOUNT_ID)'
+    required: false
+    default: ''
+  aws-region:
+    description: 'AWS region for CDK context resolution'
+    required: false
+    default: 'us-east-1'
 
 runs:
   using: 'composite'
@@ -51,7 +59,8 @@ runs:
     - name: CDK Synth
       shell: bash
       env:
-        CDK_DEFAULT_REGION: 'us-east-1'
+        CDK_DEFAULT_ACCOUNT: ${{ inputs.aws-account-id }}
+        CDK_DEFAULT_REGION: ${{ inputs.aws-region }}
       run: |
         if [ -n "${{ inputs.stack-name }}" ]; then
           npx cdk synth ${{ inputs.stack-name }}
