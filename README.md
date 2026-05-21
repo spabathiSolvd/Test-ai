@@ -1,8 +1,8 @@
 # AWS Migration Kiro
 
-Project overview and setup instructions for the AWS migration workshop.
+Project overview and setup instructions for the AWS migration workshop....
 
-## Team Assignments
+## Team work
 
 | Topic | Owner |
 |-------|-------|
