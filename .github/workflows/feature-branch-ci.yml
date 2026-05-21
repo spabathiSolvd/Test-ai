@@ -209,7 +209,7 @@ jobs:
           git pull origin main
 
           echo "Merging $BRANCH into main..."
-          git merge --no-ff "origin/$BRANCH" -m "chore: auto-merge $BRANCH into main [ci skip]"
+          git merge --no-ff "origin/$BRANCH" -m "chore: auto-merge $BRANCH into main"
 
           git push origin main
           echo "✅ Successfully merged $BRANCH into main."

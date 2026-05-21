@@ -18,8 +18,6 @@ on:
       - 'feature/**'
       - 'feat/**'
       - main
-    paths:
-      - 'lib/topics/03-cloudwatch-dashboards/**'
   pull_request:
     branches:
       - main
@@ -29,6 +27,7 @@ on:
 jobs:
   build-and-synth:
     runs-on: ubuntu-latest
+    environment: Dev
     env:
       CDK_DEFAULT_ACCOUNT: ${{ vars.AWS_ACCOUNT_ID }}
       CDK_DEFAULT_REGION: us-east-1
@@ -44,6 +43,7 @@ jobs:
     needs: build-and-synth
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    environment: Dev
     env:
       CDK_DEFAULT_ACCOUNT: ${{ vars.AWS_ACCOUNT_ID }}
       CDK_DEFAULT_REGION: us-east-1
@@ -59,4 +59,28 @@ jobs:
       - name: Build
         run: npm run build
       - name: Deploy
-        run: npx cdk deploy CloudWatchDashboardsStack --require-approval never
+        run: |
+          # Use vars.AWS_ACCOUNT_ID if set, otherwise extract from cdk.context.json
+          if [ -z "$CDK_DEFAULT_ACCOUNT" ]; then
+            CDK_DEFAULT_ACCOUNT=$(node -e "
+              const fs = require('fs');
+              try {
+                const ctx = JSON.parse(fs.readFileSync('cdk.context.json','utf8'));
+                const key = Object.keys(ctx).find(k => k.startsWith('vpc-provider:account='));
+                if (key) { const m = key.match(/account=([^:]+)/); if (m) process.stdout.write(m[1]); }
+              } catch(e) {}
+            ")
+            export CDK_DEFAULT_ACCOUNT
+          fi
+          # Clear cached dummy VPC context so CDK fetches real VPC from AWS
+          node -e "
+            const fs = require('fs');
+            try {
+              const ctx = JSON.parse(fs.readFileSync('cdk.context.json','utf8'));
+              const cleaned = Object.fromEntries(
+                Object.entries(ctx).filter(([k]) => !k.startsWith('vpc-provider:'))
+              );
+              fs.writeFileSync('cdk.context.json', JSON.stringify(cleaned, null, 2));
+            } catch(e) {}
+          "
+          npx cdk deploy CloudWatchDashboardsStack --require-approval never
