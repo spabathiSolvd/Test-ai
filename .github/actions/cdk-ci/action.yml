@@ -62,6 +62,18 @@ runs:
         CDK_DEFAULT_ACCOUNT: ${{ inputs.aws-account-id }}
         CDK_DEFAULT_REGION: ${{ inputs.aws-region }}
       run: |
+        # If CDK_DEFAULT_ACCOUNT is empty, extract it from cdk.context.json
+        if [ -z "$CDK_DEFAULT_ACCOUNT" ]; then
+          CDK_DEFAULT_ACCOUNT=$(node -e "
+            const fs = require('fs');
+            try {
+              const ctx = JSON.parse(fs.readFileSync('cdk.context.json','utf8'));
+              const key = Object.keys(ctx).find(k => k.startsWith('vpc-provider:account='));
+              if (key) { const m = key.match(/account=([^:]+)/); if (m) process.stdout.write(m[1]); }
+            } catch(e) {}
+          ")
+          export CDK_DEFAULT_ACCOUNT
+        fi
         if [ -n "${{ inputs.stack-name }}" ]; then
           npx cdk synth ${{ inputs.stack-name }}
         else
