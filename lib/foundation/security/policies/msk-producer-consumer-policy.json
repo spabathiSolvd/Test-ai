@@ -1,0 +1,35 @@
+{
+  "_description": "IRSA policy for applications that produce/consume from MSK. Replace <cluster-arn> with your actual MSK cluster ARN or use cdk.Aws references in CDK code.",
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "MSKConnect",
+      "Effect": "Allow",
+      "Action": [
+        "kafka-cluster:Connect",
+        "kafka-cluster:DescribeCluster"
+      ],
+      "Resource": "<cluster-arn>"
+    },
+    {
+      "Sid": "MSKTopicReadWrite",
+      "Effect": "Allow",
+      "Action": [
+        "kafka-cluster:ReadData",
+        "kafka-cluster:WriteData",
+        "kafka-cluster:DescribeTopic",
+        "kafka-cluster:CreateTopic"
+      ],
+      "Resource": "arn:aws:kafka:*:*:topic/<cluster-name>/*"
+    },
+    {
+      "Sid": "MSKConsumerGroup",
+      "Effect": "Allow",
+      "Action": [
+        "kafka-cluster:AlterGroup",
+        "kafka-cluster:DescribeGroup"
+      ],
+      "Resource": "arn:aws:kafka:*:*:group/<cluster-name>/*"
+    }
+  ]
+}

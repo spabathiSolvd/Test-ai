@@ -1,0 +1,81 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Reusable Composite Action: CDK CI
+#
+# Shared build/test/synth steps used by all topic CI workflows.
+# To add a new step to all pipelines, add it here once.
+#
+# Usage in a workflow:
+#   steps:
+#     - uses: actions/checkout@v4
+#     - uses: ./.github/actions/cdk-ci
+#       with:
+#         stack-name: 'NetworkingStack'  # optional — synths specific stack
+#
+# To add new checks (linting, security scanning, etc.), add steps below.
+# All topic workflows will pick them up automatically.
+# ──────────────────────────────────────────────────────────────────────────────
+name: 'CDK CI'
+description: 'Shared build, test, and synth steps for CDK TypeScript stacks'
+
+inputs:
+  stack-name:
+    description: 'Stack name to synth (optional — synths all if omitted)'
+    required: false
+    default: ''
+  node-version:
+    description: 'Node.js version to use'
+    required: false
+    default: '20'
+  aws-account-id:
+    description: 'AWS account ID for CDK context resolution (pass vars.AWS_ACCOUNT_ID)'
+    required: false
+    default: ''
+  aws-region:
+    description: 'AWS region for CDK context resolution'
+    required: false
+    default: 'us-east-1'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      shell: bash
+      run: npm ci
+
+    - name: Build (TypeScript compile)
+      shell: bash
+      run: npm run build
+
+    - name: Test
+      shell: bash
+      run: npm test
+
+    - name: CDK Synth
+      shell: bash
+      env:
+        CDK_DEFAULT_ACCOUNT: ${{ inputs.aws-account-id }}
+        CDK_DEFAULT_REGION: ${{ inputs.aws-region }}
+      run: |
+        # If CDK_DEFAULT_ACCOUNT is empty, extract it from cdk.context.json
+        if [ -z "$CDK_DEFAULT_ACCOUNT" ]; then
+          CDK_DEFAULT_ACCOUNT=$(node -e "
+            const fs = require('fs');
+            try {
+              const ctx = JSON.parse(fs.readFileSync('cdk.context.json','utf8'));
+              const key = Object.keys(ctx).find(k => k.startsWith('vpc-provider:account='));
+              if (key) { const m = key.match(/account=([^:]+)/); if (m) process.stdout.write(m[1]); }
+            } catch(e) {}
+          ")
+          export CDK_DEFAULT_ACCOUNT
+        fi
+        if [ -n "${{ inputs.stack-name }}" ]; then
+          npx cdk synth ${{ inputs.stack-name }}
+        else
+          npx cdk synth
+        fi

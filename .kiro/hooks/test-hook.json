@@ -1,0 +1,17 @@
+{
+  "name": "Run Tests on Test File Changes",
+  "version": "1.0.0",
+  "description": "Runs the test suite whenever a test file is saved. Add new patterns to expand coverage.",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "test/**/*.ts",
+      "**/*.test.ts",
+      "**/*.spec.ts"
+    ]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "npm test -- --passWithNoTests 2>&1 | tail -20"
+  }
+}

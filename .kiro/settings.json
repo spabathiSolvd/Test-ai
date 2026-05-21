@@ -1,0 +1,13 @@
+{
+  "project": "aws-migration-kiro",
+  "version": "1.0.0",
+  "agents": {
+    "security-scanner": ".kiro/agents/security-scanner.md",
+    "code-reviewer": ".kiro/agents/code-reviewer.md"
+  },
+  "hooks": {
+    "security": ".kiro/hooks/security-hook.json",
+    "build": ".kiro/hooks/build-hook.json",
+    "test": ".kiro/hooks/test-hook.json"
+  }
+}
