@@ -3,30 +3,15 @@ import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
 import { CloudWatchDashboardsStack } from '../lib/topics/03-cloudwatch-dashboards/cloudwatch-dashboards-stack';
 
-// Fall back to CDK's environment-agnostic placeholders when explicit values
-// are not provided. This allows `cdk synth` to succeed in CI without real
-// AWS credentials (e.g. on feature-branch builds).
-// const account =
-//   process.env.AWS_ACCOUNT_ID ??
-//   process.env.CDK_DEFAULT_ACCOUNT ??
-//   process.env.CDK_DEFAULT_ACCOUNT; // resolved by CDK toolkit at deploy time
+// Resolve account and region from environment variables set by the CDK toolkit
+// or CI. When neither is present, CDK synthesizes in environment-agnostic mode
+// (tokens resolve at deploy time), which is safe for feature-branch CI synth.
+const account = process.env.CDK_DEFAULT_ACCOUNT ?? process.env.AWS_ACCOUNT_ID;
+const region = process.env.CDK_DEFAULT_REGION ?? process.env.AWS_REGION;
 
-// const region =
-//   process.env.AWS_REGION ??
-//   process.env.CDK_DEFAULT_REGION;
-
-  const app = new cdk.App();
-
-const envName = (app.node.tryGetContext('envName') as 'dev' | 'staging' | 'prod') ?? 'dev';
-const account = process.env.CDK_DEFAULT_ACCOUNT ?? process.env.AWS_ACCOUNT_ID ?? '123456789012';
-const region = process.env.CDK_DEFAULT_REGION ?? 'us-east-1';
-
-
-const env: cdk.Environment = { account, region };
+const app = new cdk.App();
 
 new CloudWatchDashboardsStack(app, 'CloudWatchDashboardsStack', {
-  // When account/region are undefined CDK uses environment-agnostic synthesis,
-  // which is fine for CI synth checks on feature branches.
   env: {
     account: account ?? undefined,
     region: region ?? undefined,

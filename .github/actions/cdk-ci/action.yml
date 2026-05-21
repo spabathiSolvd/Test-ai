@@ -51,7 +51,6 @@ runs:
     - name: CDK Synth
       shell: bash
       env:
-        CDK_DEFAULT_ACCOUNT: '123456789012'
         CDK_DEFAULT_REGION: 'us-east-1'
       run: |
         if [ -n "${{ inputs.stack-name }}" ]; then
